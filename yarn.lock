@@ -789,6 +789,11 @@
   dependencies:
     ethers "^5.7.2"
 
+"@layerzerolabs/oft-evm@^0.0.10":
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/@layerzerolabs/oft-evm/-/oft-evm-0.0.10.tgz#1402a80ea0caf9614f8adb58d62c65446f2f95d5"
+  integrity sha512-Rjrxgg0k9Rh7PUCmYY3uOIs+xuGOkqPrE3/xgohIWpC5RcRFHdzFUsant/wP7Xij33Lae9fVGPsHHMrYWP6XuQ==
+
 "@layerzerolabs/prettier-config-next@^2.3.34":
   version "2.3.37"
   resolved "https://registry.yarnpkg.com/@layerzerolabs/prettier-config-next/-/prettier-config-next-2.3.37.tgz#cf5e6d05fe22488a8be4a8b6ddf5b82b3a17b190"
