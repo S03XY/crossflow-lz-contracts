@@ -1,9 +1,10 @@
 import assert from 'assert'
+import { ethers } from 'hardhat'
 
 import { type DeployFunction } from 'hardhat-deploy/types'
 
 // TODO declare your contract name here
-const contractName = 'MyOApp'
+const contractName = 'USDC'
 
 const deploy: DeployFunction = async (hre) => {
     const { getNamedAccounts, deployments } = hre
@@ -34,14 +35,16 @@ const deploy: DeployFunction = async (hre) => {
     // }
     const endpointV2Deployment = await hre.deployments.get('EndpointV2')
 
+    console.log('endpointV2Deployment', endpointV2Deployment.address)
+    console.log('deployer', deployer)
+
     const { address } = await deploy(contractName, {
         from: deployer,
-        args: [
-            endpointV2Deployment.address, // LayerZero's EndpointV2 address
-            deployer, // owner
-        ],
+        args: ['USD Coin', 'USDC', '0xbD672D1562Dd32C23B563C989d8140122483631d', deployer],
         log: true,
         skipIfAlreadyDeployed: false,
+        gasPrice: ethers.utils.parseUnits('3000',"gwei"), // Specify gas price
+        gasLimit: 6000000, // Specify gas limit
     })
 
     console.log(`Deployed contract: ${contractName}, network: ${hre.network.name}, address: ${address}`)

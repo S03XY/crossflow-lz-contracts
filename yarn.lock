@@ -740,6 +740,11 @@
   resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-messagelib-v2/-/lz-evm-messagelib-v2-2.3.37.tgz#8328be718a456c9909f3efdae6b413c19b83d018"
   integrity sha512-wrloZgT7xubB2PHZBtBUvux18fNFV5hCA5mGCCg2f8T6DkvpMC2a3CB7lwagno9bRvz4TOajwPZAbOkWEaDGmA==
 
+"@layerzerolabs/lz-evm-oapp-v2@^2.3.38":
+  version "2.3.38"
+  resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-oapp-v2/-/lz-evm-oapp-v2-2.3.38.tgz#646ef57b1c32801355d3c4d872081cee6f35b206"
+  integrity sha512-GMJCMOQRMcoxidHduVg8O60PP4GlqzX6Alk8aK4zri6Yo9I3qzYGN8BnLtvJQxFH4yXtJsDGRxBH5J7gON6XTw==
+
 "@layerzerolabs/lz-evm-protocol-v2@^2.3.34":
   version "2.3.37"
   resolved "https://registry.yarnpkg.com/@layerzerolabs/lz-evm-protocol-v2/-/lz-evm-protocol-v2-2.3.37.tgz#c5fb57a4b64e4c7e591cf94ae7b3ccc533aa7edf"

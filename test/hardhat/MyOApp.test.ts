@@ -4,8 +4,11 @@ import { Contract, ContractFactory } from 'ethers'
 import { deployments, ethers } from 'hardhat'
 
 import { Options } from '@layerzerolabs/lz-v2-utilities'
+import { assert } from 'console'
+import { equal } from 'assert'
+import { formatEther, parseEther } from 'ethers/lib/utils'
 
-describe('MyOApp Test', function () {
+describe('OFT testing', function () {
     // Constant representing a mock Endpoint ID for testing purposes
     const eidA = 1
     const eidB = 2
@@ -20,10 +23,27 @@ describe('MyOApp Test', function () {
     let mockEndpointV2A: Contract
     let mockEndpointV2B: Contract
 
+    let RegistrationContract: ContractFactory
+    let USDCContract: ContractFactory
+
+    let RegisterContractA: Contract
+    let RegisterContractB: Contract
+
+    let USDCContractA: Contract
+    let USDCContractB: Contract
+
+    const _domain = 'shashank'
+
     // Before hook for setup that runs once before all tests in the block
     before(async function () {
         // Contract factory for our tested contract
-        MyOApp = await ethers.getContractFactory('MyOApp')
+        // MyOApp = await ethers.getContractFactory('MyOApp')
+
+        // Contract factory for our Registration contract
+        RegistrationContract = await ethers.getContractFactory('Register')
+
+        // Contract factory for our usdc  contract
+        USDCContract = await ethers.getContractFactory('USDC')
 
         // Fetching the first three signers (accounts) from Hardhat's local Ethereum network
         const signers = await ethers.getSigners()
@@ -45,39 +65,130 @@ describe('MyOApp Test', function () {
 
     // beforeEach hook for setup that runs before each test in the block
     beforeEach(async function () {
-        // Deploying a mock LZ EndpointV2 with the given Endpoint ID
-        mockEndpointV2A = await EndpointV2Mock.deploy(eidA)
-        mockEndpointV2B = await EndpointV2Mock.deploy(eidB)
+        mockEndpointV2A = await EndpointV2Mock.connect(ownerA).deploy(eidA)
+        mockEndpointV2B = await EndpointV2Mock.connect(ownerA).deploy(eidB)
 
-        // Deploying two instances of MyOApp contract and linking them to the mock LZEndpoint
-        myOAppA = await MyOApp.deploy(mockEndpointV2A.address, ownerA.address)
-        myOAppB = await MyOApp.deploy(mockEndpointV2B.address, ownerB.address)
+        RegisterContractA = await RegistrationContract.connect(ownerA).deploy(ownerA.address, 0, 0)
+        RegisterContractB = await RegistrationContract.connect(ownerA).deploy(ownerA.address, 0, 0)
 
-        // Setting destination endpoints in the LZEndpoint mock for each MyOApp instance
-        await mockEndpointV2A.setDestLzEndpoint(myOAppB.address, mockEndpointV2B.address)
-        await mockEndpointV2B.setDestLzEndpoint(myOAppA.address, mockEndpointV2A.address)
+        USDCContractA = await USDCContract.connect(ownerA).deploy(
+            'USD Coin',
+            'USDC',
+            mockEndpointV2A.address,
+            ownerA.address
+        )
+        USDCContractB = await USDCContract.connect(ownerA).deploy(
+            'USD Coin',
+            'USDC',
+            mockEndpointV2B.address,
+            ownerA.address
+        )
 
-        // Setting each MyOApp instance as a peer of the other
-        await myOAppA.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(myOAppB.address, 32))
-        await myOAppB.connect(ownerB).setPeer(eidA, ethers.utils.zeroPad(myOAppA.address, 32))
+        await mockEndpointV2A.connect(ownerA).setDestLzEndpoint(USDCContractB.address, mockEndpointV2B.address)
+        await mockEndpointV2B.connect(ownerA).setDestLzEndpoint(USDCContractA.address, mockEndpointV2A.address)
+
+        await USDCContractA.connect(ownerA).setPeer(eidB, ethers.utils.zeroPad(USDCContractB.address, 32))
+        await USDCContractB.connect(ownerA).setPeer(eidA, ethers.utils.zeroPad(USDCContractA.address, 32))
     })
 
     // A test case to verify message sending functionality
-    it('should send a message to each destination OApp', async function () {
-        // Assert initial state of data in both MyOApp instances
-        expect(await myOAppA.data()).to.equal('Nothing received yet.')
-        expect(await myOAppB.data()).to.equal('Nothing received yet.')
+    it('register domain in chain A for owner A', async function () {
+        // ? register contract on chain B
+        const tx = await RegisterContractA.connect(ownerA).makeRegisterIntent(_domain, { value: 0 })
+        const response = await tx.wait()
+        if (response.events[0].event === 'EventRegisterIntent') {
+            const tx = await RegisterContractA.connect(ownerA).reserveDomain(ownerA.address, _domain)
+            const response = await tx.wait()
+        }
+
+        const registeredDomain = await RegisterContractA.domainToAddress(_domain)
+        expect(registeredDomain).eq(ownerA.address)
+    })
+
+    it('transfer some usdc to ownerB ', async function () {
+        // ? fund owner B with some tokens
+        let ownerABalance = await USDCContractB.connect(ownerA).balanceOf(ownerA.address)
+        expect(formatEther(ownerABalance)).eq('1000.0')
+
+        const tx = await USDCContractB.transfer(ownerB.address, parseEther('100'))
+        await tx.wait()
+
+        ownerABalance = await USDCContractB.connect(ownerA).balanceOf(ownerA.address)
+        expect(formatEther(ownerABalance)).eq('900.0')
+
+        let ownerBBalance = await USDCContractB.connect(ownerA).balanceOf(ownerB.address)
+        expect(formatEther(ownerBBalance)).eq('100.0')
+    })
+
+    it('transfer usdc token from chain B to chain A using domain', async function () {
+        // ? register
+
+        const tx = await RegisterContractA.connect(ownerA).makeRegisterIntent(_domain, { value: 0 })
+        const response = await tx.wait()
+        if (response.events[0].event === 'EventRegisterIntent') {
+            const tx = await RegisterContractA.connect(ownerA).reserveDomain(ownerA.address, _domain)
+            const response = await tx.wait()
+        }
+
+        // ? fund owner B with some tokens
+        const transferTx = await USDCContractB.connect(ownerA).transfer(ownerB.address, parseEther('100'))
+        await transferTx.wait()
+
+        let ownerBBalance = await USDCContractB.connect(ownerB).balanceOf(ownerB.address)
+        expect(formatEther(ownerBBalance)).eq('100.0')
+
+        //  ? invoke transfer intent on chain B to chain A
         const options = Options.newOptions().addExecutorLzReceiveOption(200000, 0).toHex().toString()
 
-        // Define native fee and quote for the message send operation
-        let nativeFee = 0
-        ;[nativeFee] = await myOAppA.quote(eidB, 'Test message.', options, false)
+        const transferIntentTx = await USDCContractB.transferIntent(_domain, parseEther('1'), eidA, {
+            value: parseEther('1'),
+        })
+        const transferIntentResponse = await transferIntentTx.wait()
 
-        // Execute send operation from myOAppA
-        await myOAppA.send(eidB, 'Test message.', options, { value: nativeFee.toString() })
+        if (transferIntentResponse.events[0]) {
+            const event = transferIntentResponse.events[0]
+            // console.log('event name', event.event)
 
-        // Assert the resulting state of data in both MyOApp instances
-        expect(await myOAppA.data()).to.equal('Nothing received yet.')
-        expect(await myOAppB.data()).to.equal('Test message.')
+            if (event.event === 'EventTransferIntent') {
+                const tokensToSend = ethers.utils.parseEther('1')
+
+                // Defining extra message execution options for the send operation
+                const options = Options.newOptions().addExecutorLzReceiveOption(200000, 0).toHex().toString()
+
+                const convertedFromDomain = ethers.utils.formatBytes32String('owner b')
+                const convertedToDomain = ethers.utils.formatBytes32String('owner a')
+
+                // address, fromDomain, toDomain
+
+                const encodedData = ethers.utils.defaultAbiCoder.encode(
+                    ['address', 'bytes32', 'bytes32'],
+                    [ownerB.address, convertedFromDomain, convertedToDomain]
+                )
+
+                const sendParam = [
+                    eidA,
+                    ethers.utils.zeroPad(ownerA.address, 32),
+                    tokensToSend,
+                    tokensToSend,
+                    options,
+                    encodedData,
+                    '0x',
+                ]
+
+                // Fetching the native fee for the token send operation
+                const [nativeFee] = await USDCContractB.connect(ownerB).quoteSend(sendParam, false)
+                const transferTx = await USDCContractB.send(sendParam, [nativeFee, 0], ownerB.address, {
+                    value: nativeFee,
+                })
+
+                const transferTxResponse = await transferTx.wait()
+                console.log('transferTxResponse', transferTxResponse.events)
+
+                const event = transferTxResponse.events.find((event: any) => event.event === 'EventTransferCompleted')
+                console.log('event', event.args[0] === ownerB.address)
+            }
+        }
+
+        // console.log(transferIntentResponse)
     })
 })
