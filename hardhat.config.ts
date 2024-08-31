@@ -62,12 +62,17 @@ const config: HardhatUserConfig = {
             eid: EndpointId.HEDERA_V2_TESTNET,
             url: process.env.RPC_URL_HEDERA!,
             accounts,
+            timeout: 300_000,
         },
         'morph-testnet': {
             eid: EndpointId.HOLESKY_V2_TESTNET,
             url: process.env.RPC_URL_MORPH!,
             accounts,
         },
+    },
+
+    mocha: {
+        timeout: 300_000,
     },
     namedAccounts: {
         deployer: {
