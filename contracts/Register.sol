@@ -15,6 +15,7 @@ contract Register is Ownable {
     }
 
     Fees public fees;
+
     mapping(bytes32 => address) public domainToAddress;
     mapping(address => bool) public isRegistered;
     mapping(address => bool) public isChainActivated;
@@ -25,12 +26,14 @@ contract Register is Ownable {
 
     event EventRegisterIntent(bytes32 indexed _domain, address indexed _address);
     event EventDomainRegistered(bytes32 indexed _domain, address indexed _address);
-    
+
     event EventUpdateDomainIntent(bytes32 indexed _domain, address indexed _address);
     event EventDomainUpdated(bytes32 indexed _domain, address indexed _address);
-    
+
     event EventFeesUpdated(uint indexed _registrationFees, uint indexed _updateDomainFees);
-    event EventChainActivated(address indexed _address);
+
+    // event EventChainActivated(address indexed _address);
+    // event EventChainActivatedIntent(address indexed _address);
 
     modifier checkRegisterFees() {
         require(msg.value == fees.registrationFees, "incorrect registration fees");
@@ -46,20 +49,20 @@ contract Register is Ownable {
     }
 
     function reserveDomain(address _address, bytes32 _domain) external onlyOwner {
-        require(isRegistered[_address] == false, "address already registered");
-        require(domainToAddress[_domain] == address(0), "domain already registered");
+        // require(isRegistered[_address] == false, "address already registered");
+        // require(domainToAddress[_domain] == address(0), "domain already registered");
         domainToAddress[_domain] = _address;
         emit EventDomainRegistered(_domain, _address);
     }
 
     function updateDomainIntent(bytes32 _domain, address _newAddress) external payable checkUpdateFees {
-        require(domainToAddress[_domain] != address(0), "domain not registered");
-        require(domainToAddress[_domain] == msg.sender, "unauthorized");
+        // require(domainToAddress[_domain] != address(0), "domain not registered");
+        // require(domainToAddress[_domain] == msg.sender, "unauthorized");
         emit EventUpdateDomainIntent(_domain, _newAddress);
     }
 
     function updateDomain(bytes32 _domain, address _newAddress) external onlyOwner {
-        require(domainToAddress[_domain] != address(0), "domain not registered");
+        // require(domainToAddress[_domain] != address(0), "domain not registered");
         domainToAddress[_domain] = _newAddress;
         emit EventDomainUpdated(_domain, _newAddress);
     }
@@ -73,10 +76,21 @@ contract Register is Ownable {
         emit EventFeesUpdated(fees.registrationFees, fees.updateDomainFees);
     }
 
-    function activateChain() external {
-        require(isRegistered[msg.sender] == true, "sender not registered");
-        require(isChainActivated[msg.sender] == false, "chain already activated");
-        isChainActivated[msg.sender] = true;
-        emit EventChainActivated(msg.sender);
-    }
+    // function activateChainIntent() external payable checkUpdateFees {
+    //     emit EventChainActivatedIntent(msg.sender);
+    // }
+
+    // function activateChain(bytes32 _domain, address sender) external onlyOwner {
+    //     // require(isRegistered[sender] == true, "sender not registered");
+    //     // require(isChainActivated[msg.sender] == false, "chain already activated");
+
+    //     address _add = domainToAddress[_domain];
+
+    //     if (_add == address(0)) {
+    //         domainToAddress[_domain] = sender;
+    //     }
+
+    //     isChainActivated[msg.sender] = true;
+    //     emit EventChainActivated(msg.sender);
+    // }
 }

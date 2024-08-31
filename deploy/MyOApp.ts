@@ -25,7 +25,7 @@ const deploy: DeployFunction = async (hre) => {
 
     const { address } = await deploy(contractName, {
         from: deployer,
-        args: [deploy, 0, 0],
+        args: [deployer, 0, 0],
         log: true,
         skipIfAlreadyDeployed: false,
     })
